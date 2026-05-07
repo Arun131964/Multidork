@@ -3,3 +3,5 @@ __pycache__/
 .env
 config.ini
 *.key
+app.py
+index.html
