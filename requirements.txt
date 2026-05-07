@@ -1,0 +1,7 @@
+requests
+beautifulsoup4
+duckduckgo-search
+flask
+colorama
+lxml
+urllib3

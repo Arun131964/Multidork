@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MultiDork — Multi-Engine Dorking Tool</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --input-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .logo { font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: 1px; }
+    .tagline { color: var(--muted); font-size: 13px; }
+    .warning-badge {
+      margin-left: auto;
+      background: rgba(248, 81, 73, 0.15);
+      border: 1px solid var(--red);
+      color: var(--red);
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    /* ── Layout ── */
+    .container { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
+    .grid { display: grid; grid-template-columns: 340px 1fr; gap: 24px; }
+
+    /* ── Panel ── */
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .panel-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      margin-bottom: 16px;
+    }
+
+    /* ── Form elements ── */
+    label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; }
+    textarea, input[type=text], input[type=number], select {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      padding: 9px 12px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    textarea:focus, input:focus { border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 80px; }
+
+    .form-row { margin-bottom: 16px; }
+
+    /* ── Engine checkboxes ── */
+    .engine-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .engine-check {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      transition: border-color .15s, background .15s;
+      user-select: none;
+    }
+    .engine-check:hover { border-color: var(--accent); }
+    .engine-check input[type=checkbox] { accent-color: var(--accent); width: 14px; height: 14px; }
+    .engine-check.checked { border-color: var(--accent); background: rgba(88,166,255,0.07); }
+
+    .engine-actions { display: flex; gap: 8px; margin-bottom: 8px; }
+    .btn-sm {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Presets ── */
+    .preset-category { margin-bottom: 12px; }
+    .preset-cat-title {
+      font-size: 11px;
+      color: var(--yellow);
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .preset-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text);
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+      padding: 5px 9px;
+      margin-bottom: 4px;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .preset-btn:hover { background: rgba(88,166,255,0.08); border-color: var(--accent); }
+
+    /* ── Run button ── */
+    .btn-run {
+      width: 100%;
+      padding: 11px;
+      background: var(--accent);
+      color: #0d1117;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .2s;
+      margin-top: 4px;
+    }
+    .btn-run:hover { opacity: .85; }
+    .btn-run:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* ── Results ── */
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .results-title { font-size: 15px; font-weight: 600; }
+    .badge {
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+    .badge-green { background: rgba(63,185,80,.15); color: var(--green); }
+    .badge-muted { background: rgba(139,148,158,.12); color: var(--muted); }
+
+    /* Status bar */
+    #status-bar {
+      background: rgba(88,166,255,0.08);
+      border: 1px solid rgba(88,166,255,0.2);
+      border-radius: 6px;
+      padding: 9px 14px;
+      font-size: 13px;
+      color: var(--accent);
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    /* Engine result blocks */
+    .engine-block {
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .engine-block-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      background: rgba(255,255,255,0.03);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .engine-block-header:hover { background: rgba(255,255,255,0.05); }
+    .engine-name { color: var(--accent); }
+    .url-count { color: var(--muted); font-size: 12px; font-weight: 400; }
+    .engine-block-body { display: none; padding: 6px 0; }
+    .engine-block-body.open { display: block; }
+    .url-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      font-size: 12px;
+      border-bottom: 1px solid rgba(48,54,61,0.5);
+    }
+    .url-item:last-child { border-bottom: none; }
+    .url-item a {
+      color: var(--text);
+      text-decoration: none;
+      word-break: break-all;
+      flex: 1;
+    }
+    .url-item a:hover { color: var(--accent); text-decoration: underline; }
+    .copy-btn {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .copy-btn:hover { border-color: var(--green); color: var(--green); }
+
+    /* All URLs block */
+    .all-urls-block {
+      margin-top: 16px;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .all-urls-header {
+      background: rgba(63,185,80,.08);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--green);
+      cursor: pointer;
+    }
+    .all-urls-body {
+      padding: 6px 0;
+      display: none;
+    }
+    .all-urls-body.open { display: block; }
+
+    textarea#all-urls-text {
+      width: 100%;
+      background: var(--input-bg);
+      border: none;
+      color: var(--text);
+      font-size: 12px;
+      padding: 12px;
+      min-height: 200px;
+      resize: vertical;
+      border-top: 1px solid var(--border);
+      outline: none;
+    }
+
+    .copy-all-btn {
+      background: rgba(63,185,80,.1);
+      border: 1px solid var(--green);
+      color: var(--green);
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .copy-all-btn:hover { background: rgba(63,185,80,.2); }
+
+    .placeholder-text {
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      padding: 60px 20px;
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+    }
+    .placeholder-text .icon { font-size: 40px; margin-bottom: 10px; }
+
+    /* Error */
+    .error-box {
+      background: rgba(248,81,73,.1);
+      border: 1px solid var(--red);
+      color: var(--red);
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 13px;
+    }
+
+    /* Spinner */
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(88,166,255,.3);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Scrollable presets */
+    .presets-scroll { max-height: 300px; overflow-y: auto; padding-right: 4px; }
+    .presets-scroll::-webkit-scrollbar { width: 4px; }
+    .presets-scroll::-webkit-scrollbar-track { background: transparent; }
+    .presets-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">⚡ MultiDork</div>
+    <div class="tagline">Multi-Engine Automated Dorking Tool</div>
+  </div>
+  <div class="warning-badge">⚠ Authorized Use Only</div>
+</header>
+
+<div class="container">
+  <div class="grid">
+
+    <!-- ── LEFT PANEL ── -->
+    <div>
+      <!-- Query -->
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-title">Dork Query</div>
+        <div class="form-row">
+          <label>Query</label>
+          <textarea id="query-input" placeholder='e.g. site:example.com filetype:pdf "confidential"'></textarea>
+        </div>
+        <div class="form-row">
+          <label>Max Results per Engine</label>
+          <input type="number" id="max-results" value="20" min="1" max="100" />
+        </div>
+        <button class="btn-run" id="run-btn" onclick="runSearch()">🔍 Run MultiDork</button>
+      </div>
+
+      <!-- Engines -->
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-title">Search Engines</div>
+        <div class="engine-actions">
+          <button class="btn-sm" onclick="toggleAll(true)">Select All</button>
+          <button class="btn-sm" onclick="toggleAll(false)">Deselect All</button>
+        </div>
+        <div class="engine-grid" id="engine-grid">
+          {% for engine in engines %}
+          <label class="engine-check checked" id="lbl-{{ engine }}">
+            <input type="checkbox" value="{{ engine }}" checked onchange="updateLabel(this)" />
+            {{ engine.capitalize() }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Presets -->
+      <div class="panel">
+        <div class="panel-title">Preset Dorks</div>
+        <div class="presets-scroll">
+          {% for category, dorks in presets.items() %}
+          <div class="preset-category">
+            <div class="preset-cat-title">{{ category }}</div>
+            {% for dork in dorks %}
+            <button class="preset-btn" onclick="setPreset(this.textContent.trim())">{{ dork }}</button>
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RIGHT PANEL ── -->
+    <div>
+      <div class="results-header">
+        <span class="results-title">Results</span>
+        <span id="result-badge" class="badge badge-muted">Waiting</span>
+      </div>
+
+      <div id="status-bar"></div>
+      <div id="results-area">
+        <div class="placeholder-text">
+          <div class="icon">🔎</div>
+          Enter a dork query and click <strong>Run MultiDork</strong> to start scanning across all selected engines.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function setPreset(text) {
+    document.getElementById("query-input").value = text;
+  }
+
+  function updateLabel(cb) {
+    const lbl = document.getElementById("lbl-" + cb.value);
+    if (cb.checked) lbl.classList.add("checked");
+    else lbl.classList.remove("checked");
+  }
+
+  function toggleAll(state) {
+    document.querySelectorAll("#engine-grid input[type=checkbox]").forEach(cb => {
+      cb.checked = state;
+      updateLabel(cb);
+    });
+  }
+
+  function getSelectedEngines() {
+    return [...document.querySelectorAll("#engine-grid input[type=checkbox]:checked")]
+      .map(cb => cb.value);
+  }
+
+  function showStatus(msg) {
+    const bar = document.getElementById("status-bar");
+    bar.style.display = "block";
+    bar.innerHTML = `<span class="spinner"></span>${msg}`;
+  }
+
+  function hideStatus() {
+    document.getElementById("status-bar").style.display = "none";
+  }
+
+  function copyText(text) {
+    navigator.clipboard.writeText(text).catch(() => {});
+  }
+
+  function copyAll() {
+    const ta = document.getElementById("all-urls-text");
+    copyText(ta.value);
+    const btn = document.querySelector(".copy-all-btn");
+    btn.textContent = "✓ Copied!";
+    setTimeout(() => btn.textContent = "Copy All", 1500);
+  }
+
+  function toggleBlock(id) {
+    const body = document.getElementById(id);
+    body.classList.toggle("open");
+  }
+
+  async function runSearch() {
+    const query = document.getElementById("query-input").value.trim();
+    const maxResults = parseInt(document.getElementById("max-results").value) || 20;
+    const engines = getSelectedEngines();
+
+    if (!query) { alert("Please enter a dork query."); return; }
+    if (!engines.length) { alert("Please select at least one engine."); return; }
+
+    const btn = document.getElementById("run-btn");
+    btn.disabled = true;
+    btn.textContent = "⏳ Searching...";
+    document.getElementById("result-badge").className = "badge badge-muted";
+    document.getElementById("result-badge").textContent = "Running...";
+    showStatus(`Querying ${engines.length} search engine(s)… this may take a while.`);
+    document.getElementById("results-area").innerHTML = "";
+
+    try {
+      const resp = await fetch("/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, engines, max_results: maxResults })
+      });
+      const data = await resp.json();
+      hideStatus();
+
+      if (data.error) {
+        document.getElementById("results-area").innerHTML =
+          `<div class="error-box">❌ ${data.error}</div>`;
+        return;
+      }
+
+      renderResults(data);
+
+    } catch (err) {
+      hideStatus();
+      document.getElementById("results-area").innerHTML =
+        `<div class="error-box">❌ Request failed: ${err.message}</div>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "🔍 Run MultiDork";
+    }
+  }
+
+  function renderResults(data) {
+    const badge = document.getElementById("result-badge");
+    badge.className = data.total > 0 ? "badge badge-green" : "badge badge-muted";
+    badge.textContent = `${data.total} unique URLs`;
+
+    let html = "";
+
+    // Per-engine blocks
+    for (const [engine, urls] of Object.entries(data.per_engine)) {
+      const blockId = "block-" + engine;
+      if (urls.length === 0) {
+        html += `
+          <div class="engine-block">
+            <div class="engine-block-header">
+              <span class="engine-name">${engine.charAt(0).toUpperCase() + engine.slice(1)}</span>
+              <span class="url-count">No results / blocked</span>
+            </div>
+          </div>`;
+        continue;
+      }
+      const urlItems = urls.map(u =>
+        `<div class="url-item">
+          <a href="${u}" target="_blank" rel="noopener">${u}</a>
+          <button class="copy-btn" onclick="copyText('${u.replace(/'/g,"\\'")}')">Copy</button>
+        </div>`
+      ).join("");
+
+      html += `
+        <div class="engine-block">
+          <div class="engine-block-header" onclick="toggleBlock('${blockId}')">
+            <span class="engine-name">${engine.charAt(0).toUpperCase() + engine.slice(1)}</span>
+            <span class="url-count">${urls.length} URL(s) ▾</span>
+          </div>
+          <div class="engine-block-body open" id="${blockId}">
+            ${urlItems}
+          </div>
+        </div>`;
+    }
+
+    // All URLs block
+    if (data.all_urls.length > 0) {
+      const allText = data.all_urls.join("\n");
+      html += `
+        <div class="all-urls-block">
+          <div class="all-urls-header" onclick="toggleBlock('all-urls-body')">
+            <span>✅ All Unique URLs (${data.total})</span>
+            <button class="copy-all-btn" onclick="event.stopPropagation(); copyAll()">Copy All</button>
+          </div>
+          <div class="all-urls-body open" id="all-urls-body">
+            <textarea id="all-urls-text" readonly>${allText}</textarea>
+          </div>
+        </div>`;
+    } else {
+      html += `<div class="placeholder-text"><div class="icon">😶</div>No results found across all engines.</div>`;
+    }
+
+    document.getElementById("results-area").innerHTML = html;
+  }
+
+  // Allow Ctrl+Enter to run
+  document.addEventListener("keydown", e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") runSearch();
+  });
+</script>
+</body>
+</html>
